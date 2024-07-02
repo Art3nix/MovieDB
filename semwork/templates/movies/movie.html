@@ -1,0 +1,91 @@
+{% extends "navbar_site.html" %}
+{% block title %}{{ movie.name }}{% endblock %}
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="/adminlte/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
+{% endblock %}
+{% block content %}
+        <div class="container pt-4 d-flex flex-column">
+            <div class="d-flex flex-row justify-content-between">
+                <div class="d-flex flex-row align-items-end">
+                    <h2 class="my-auto mr-2">{{ movie.name }}</h2>
+                    <h5 class="my-auto font-weight-light">{{ movie.release_year}}</h5>
+                </div>
+                <div class="d-flex flex-row justify-content-end">
+                    <div class="mr-4">
+                        <h4 class="mb-0">{{ movie.imdb_rating }}</h4>
+                        <h6 class="mb-0 font-weight-light">IMDB</h6>
+                    </div>
+                    <div>
+                        <h4 class="mb-0">{{ movie.meta_score }}</h4>
+                        <h6 class="mb-0 font-weight-light">Meta</h6>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-row">
+                <p class="font-weight-light">{{ movie.runtime }}</p>
+                {% if movie.certificate %}
+                    <div class="mx-3 font-weight-light">|</div>
+                    <p class="font-weight-light">{{ movie.certificate }}</p>
+                {% endif %}
+                <div class="mx-3 font-weight-light">|</div>
+                <p class="font-weight-light">{{ movie.genre }}</p>
+            </div>
+            <div class="d-flex flex-row">
+                <img src="{{ movie.poster_link }}" class="col-md-4 col-sm-6 mr-3" alt="{{ movie.name }}">
+                <div class="d-flex flex-column justify-content-between">
+                    <div>
+                        <p>{{ movie.summary }}</p>
+                        <p><b>Director:</b> {{ movie.director }}</p>
+                        <p><b>Stars:</b> {{ movie.star1 }}, {{ movie.star2 }}, {{ movie.star3 }}, {{ movie.star4 }}</p>
+                        {% if movie.id | in_watch_later(current_user) %}
+                        <form action="{{ url_for('movies.remove_from_watch_later', movie_id=movie.id) }}" method="post" class="d-flex mb-5 mr-3 justify-content-end">
+                            <button type="submit" class="btn btn-primary">Remove from watch later</button>
+                        </form>
+                        {% else %}
+                        <form action="{{ url_for('movies.add_to_watch_later', movie_id=movie.id) }}" method="post" class="d-flex mb-5 mr-3 justify-content-end">
+                            <button type="submit" class="btn btn-primary"{% if not current_user.is_authenticated %} disabled{% endif %}>Add to watch later</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label>Date watched</label>
+                        <form class="d-flex flex-row" action="{{ url_for('movies.add_to_watch_list', movie_id=movie.id)}}" method="post">
+                            <div class="mr-5">
+                                <button type="submit" class="btn btn-primary"{% if not current_user.is_authenticated %} disabled{% endif %}>Add to watch history</button>
+                                {% if success %}
+                                <span class="w-100 text-success">{{ success }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="form-group col-4 px-0 mb-0">
+                                <div class="input-group date" id="datewatched" data-target-input="nearest">
+                                    <input type="text" name="datewatched" class="form-control datetimepicker-input" data-target="#datewatched">
+                                    <div class="input-group-append" data-target="#datewatched" data-toggle="datetimepicker">
+                                        <div class="input-group-text"><i class="fa fa-calendar"></i></div>
+                                    </div>
+                                    {% if error %}
+                                    <span class="w-100 text-danger">{{ error }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+{% block scripts %}
+{{ super() }}
+<script src="/adminlte/plugins/moment/moment-with-locales.min.js"></script>
+<script src="/adminlte/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
+<script type="text/javascript">
+    $(function () {
+        $('#datewatched').datetimepicker({
+            format: 'LL',
+            locale: 'en-gb',
+            maxDate: new Date()
+        });
+    });
+</script>
+
+{% endblock %}

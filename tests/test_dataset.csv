@@ -1,0 +1,10 @@
+Poster_Link,Series_Title,Released_Year,Certificate,Runtime,Genre,IMDB_Rating,Overview,Meta_score,Director,Star1,Star2,Star3,Star4,No_of_Votes,Gross
+"https://link-to-movie-1.com",Movie 1,2020,A,100 min,"GenreA, GenreB",9.0,"Quick summary of the movie",80,Frank Darabont,Brad Pitt,Morgan Freeman,Tom Hanks,Matt Damon,2343110,"28,341,469"
+"https://link-to-movie-2.com",Movie 2,2002,UA,90 min,"GenreA, GenreB",7.9,"Quick summary of the movie",80,Christopher Nolan,Arnold Schwarzenegger,Brad Pitt,Michael Caine,Scarlett Johansson,2343110,"28,341,469"
+"https://link-to-movie-3.com",Movie 3,2023,A,140 min,"GenreA, GenreC",9.1,"Quick summary of the movie",80,Quentin Tarantino,Morgan Freeman,Christian Bale,Charles Chaplin,Kevin Spacey,2343110,"28,341,469"
+"https://link-to-movie-4.com",Movie 4,1994,PG,105 min,"GenreA, GenreD",8.5,"Quick summary of the movie",80,Steven Spielberg,Tom Hanks,Hugh Jackman,Robert Downey Jr.,Christian Bale,2343110,"28,341,469"
+"https://link-to-movie-5.com",Movie 5,1975,A,100 min,"GenreD, GenreF",9.2,"Quick summary of the movie",80,Christopher Nolan,Matt Damon,Michael Caine,Morgan Freeman,Arnold Schwarzenegger,2343110,"28,341,469"
+"https://link-to-movie-6.com",Movie 6,2016,UA,123 min,"GenreE, GenreF",6.2,"Quick summary of the movie",80,Quentin Tarantino,Brad Pitt,Morgan Freeman,Matt Damon,Charles Chaplin,2343110,"28,341,469"
+"https://link-to-movie-7.com",Movie 7,2007,A,119 min,"GenreE, GenreF",7.7,"Quick summary of the movie",80,Christopher Nolan,Brad Pitt,Scarlett Johansson,Christian Bale,Morgan Freeman,2343110,"28,341,469"
+"https://link-to-movie-8.com",Movie 8,1988,PG,111 min,"GenreE, GenreF",7.5,"Quick summary of the movie",80,Steven Spielberg,Tom Hanks,Kevin Spacey,Hugh Jackman,Robert Downey Jr.,2343110,"28,341,469"
+"https://link-to-movie-9.com",Movie 9,2019,PG,85 min,GenreF,8.8,"Quick summary of the movie",80,James Cameron,Michael Caine,Matt Damon,Christian Bale,Scarlett Johansson,2343110,"28,341,469"

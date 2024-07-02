@@ -1,0 +1,24 @@
+{% extends "navbar_site.html" %}
+{% block title %}{{ prompt }}{% endblock %}
+{% block content %}
+    {% if movies | query_empty %}
+        <span>No movies were found</span>
+    {% else %}
+        <div class="container">
+        <div class="row pt-4">
+            {% for movie in movies %}
+            <div class="col-sm-4 col-md-3 col-xl-2 mb-3">
+                <div class="card">
+                    <img src="{{ movie[0].poster_link }}" class="card-img-top" alt="{{ movie[0].name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ movie[0].name }}</h5>
+                        <p class="card-text">{{ movie[0].release_year}}</p>
+                        <a href="{{ url_for('movies.movie', movie_id=movie[0].id, name=(movie[0].name | movie_name_to_url)) }}" class="btn btn-primary">Details</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        </div>
+    {% endif %}
+{% endblock %}

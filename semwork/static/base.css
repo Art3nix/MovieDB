@@ -1,0 +1,115 @@
+body {
+    font-family: Roboto;
+    background-color: #161616;
+    color: #fff;
+}
+
+.content-wrapper .container {
+    background-color: rgba(0,0,0, 0.4);
+    backdrop-filter: blur(5px);
+    min-height: inherit;
+}
+.content-wrapper, .login-page, .register-page {
+    background: linear-gradient(rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.9)), url('https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+}
+
+.card .btn {
+    width: fit-content;
+}
+
+.input-group-append, .input-group-append .btn:hover {
+    color: #6c757d;
+    background-color: #fff;
+}
+
+.font-weight-light {
+    font-weight: 200!important;
+}
+
+
+/*
+----------------------------
+Change bootstrap color theme
+----------------------------
+*/
+
+:root {
+    --primary-red: #9f0000;
+    --primary-red-darker: #7b0000;
+}
+
+a {
+    color: #fff;
+}
+
+a:hover {
+    color: #c4c4c4;
+}
+
+.dropdown-item.active,.dropdown-item:active {
+    background-color: var(--primary-red-darker);
+}
+
+/* Buttons */
+
+.btn-primary {
+    color: #fff;
+    background-color: var(--primary-red);
+    border-color: var(--primary-red);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-red-darker);
+    border-color: var(--primary-red-darker);
+}
+  
+.btn-primary:focus, .btn-primary.focus {
+    color: #fff;
+    background-color: var(--primary-red-darker);
+    border-color: var(--primary-red-darker);
+    box-shadow: 0 0 0 0 rgba(123, 0, 0, 0.5);
+}
+.btn-outline-secondary:not(:disabled):not(.disabled).active, .btn-outline-secondary:not(:disabled):not(.disabled):active, .show>.btn-outline-secondary.dropdown-toggle {
+    background-color: var(--primary-red-darker);
+    border-color: var(--primary-red-darker);
+}
+
+.btn-primary:not(:disabled):not(.disabled).active,.btn-primary:not(:disabled):not(.disabled):active,.show>.btn-primary.dropdown-toggle {
+    background-color: var(--primary-red-darker);
+    border-color: var(--primary-red-darker);
+}
+
+.btn-primary:not(:disabled):not(.disabled).active:focus,.btn-primary:not(:disabled):not(.disabled):active:focus,.show>.btn-primary.dropdown-toggle:focus {
+    box-shadow: 0 0 0 0 rgba(123,0,0,.5)
+}
+
+.btn-primary.disabled, .btn-primary:disabled {
+    background-color: var(--primary-red-darker);
+    border-color: var(--primary-red-darker);
+}
+
+/* Pagination */
+
+.page-item.active .page-link {
+    z-index: 3;
+    color: #fff;
+    background-color: var(--primary-red-darker);
+    border-color: var(--primary-red-darker);
+}
+
+.page-link {
+    color: var(--primary-red);
+}
+
+.page-link:hover {
+    color: var(--primary-red-darker);
+}
+
+.page-link:focus {
+    box-shadow: 0 0 0 .2rem rgba(123,0,0,.25);
+}
+
+.card {
+    background-color: #141414;
+}
+

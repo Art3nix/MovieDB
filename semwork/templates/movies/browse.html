@@ -1,0 +1,26 @@
+{% extends "navbar_site.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% block title %}Browse movies{% endblock %}
+{% block content %}
+{% if pagination.total == 0 %}
+    <span>No movies are available.</span>
+{% else %}
+    <div class="container pb-4 d-flex flex-column">
+        <div class="row py-4">
+            {% for movie in pagination.items %}
+                <div class="col-sm-4 col-md-3 col-xl-2 mb-3">
+                    <div class="card h-100">
+                        <img src="{{ movie.poster_link }}" class="card-img-top" alt="{{ movie.name }}">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ movie.name }}</h5>
+                            <p class="card-text font-weight-light">{{ movie.release_year}}</p>
+                            <a href="{{ url_for('movies.movie', movie_id=movie.id, name=(movie.name | movie_name_to_url)) }}" class="btn btn-primary mt-auto">Details</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        {{ render_pagination(pagination, "movies.browse") }}
+    </div>
+{% endif %}
+{% endblock %}

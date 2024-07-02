@@ -1,0 +1,36 @@
+services:
+  web: 
+    build: .
+    command: flask --app semwork run --host 0.0.0.0 --port=8000
+    restart: always
+    stop_signal: SIGINT
+    volumes:
+      - .:/usr/src/app/
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+  db:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      - POSTGRES_DB=admin_db
+      - POSTGRES_USER=admin_user
+      - POSTGRES_PASSWORD=admin_pass
+    volumes:
+      - postgres_db:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: email@email.com
+      PGADMIN_DEFAULT_PASSWORD: passwd
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+volumes:
+  postgres_db:
+  pgadmin-data:
