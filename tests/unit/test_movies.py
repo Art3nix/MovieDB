@@ -5,12 +5,12 @@ import pytest
 
 from flask_login import current_user
 
-from semwork.extensions import db
-from semwork.models.movie import Movie
-from semwork.models.watch_later import WatchLater
-from semwork.models.watch_list import WatchList
-from semwork.models.user import User
-from semwork.movies.filters import movie_name_to_url, query_empty, in_watch_later
+from moviedb.extensions import db
+from moviedb.models.movie import Movie
+from moviedb.models.watch_later import WatchLater
+from moviedb.models.watch_list import WatchList
+from moviedb.models.user import User
+from moviedb.movies.filters import movie_name_to_url, query_empty, in_watch_later
 
 
 @pytest.mark.parametrize(

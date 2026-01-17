@@ -3,11 +3,11 @@
 from flask import render_template
 from flask_login import login_required, current_user
 
-from semwork.home import bp  # pylint: disable=R0401; # noqa
-from semwork.home.services import get_watch_again, get_new_recommendations
-from semwork.extensions import db
-from semwork.models.movie import Movie
-from semwork.models.watch_later import WatchLater
+from moviedb.home import bp  # pylint: disable=R0401; # noqa
+from moviedb.home.services import get_watch_again, get_new_recommendations
+from moviedb.extensions import db
+from moviedb.models.movie import Movie
+from moviedb.models.watch_later import WatchLater
 
 
 @bp.route('/')

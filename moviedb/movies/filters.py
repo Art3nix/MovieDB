@@ -3,9 +3,9 @@
 import re
 import unicodedata
 
-from semwork.movies import bp  # pylint: disable=R0401; # noqa
-from semwork.extensions import db
-from semwork.models.watch_later import WatchLater
+from moviedb.movies import bp  # pylint: disable=R0401; # noqa
+from moviedb.extensions import db
+from moviedb.models.watch_later import WatchLater
 
 
 @bp.app_template_filter('movie_name_to_url')

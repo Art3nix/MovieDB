@@ -3,7 +3,7 @@
 from flask_login import UserMixin
 from sqlalchemy.orm import Mapped, mapped_column
 
-from semwork.extensions import db, bcrypt
+from moviedb.extensions import db, bcrypt
 
 
 class User(UserMixin, db.Model):

@@ -5,9 +5,9 @@ from datetime import datetime
 from sqlalchemy import func, case
 from flask_login import current_user
 
-from semwork.extensions import db
-from semwork.models.movie import Movie
-from semwork.models.watch_list import WatchList
+from moviedb.extensions import db
+from moviedb.models.movie import Movie
+from moviedb.models.watch_list import WatchList
 
 
 def get_new_recommendations(maximum: int = 30, recent_limit: int = 10):

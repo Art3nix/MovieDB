@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from semwork.extensions import bcrypt
+from moviedb.extensions import bcrypt
 
 
 def test_user(new_user):

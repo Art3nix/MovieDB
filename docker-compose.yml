@@ -1,8 +1,8 @@
 services:
   web: 
     build: .
-    command: flask --app semwork run --host 0.0.0.0 --port=8000
-    restart: always
+    command: flask --app moviedb run --host 0.0.0.0 --port=8000
+    restart: no
     stop_signal: SIGINT
     volumes:
       - .:/usr/src/app/
@@ -12,7 +12,7 @@ services:
       - db
   db:
     image: postgres:13-alpine
-    restart: always
+    restart: no
     environment:
       - POSTGRES_DB=admin_db
       - POSTGRES_USER=admin_user
@@ -23,7 +23,7 @@ services:
       - "5432:5432"
   pgadmin:
     image: dpage/pgadmin4
-    restart: always
+    restart: no
     ports:
       - "8888:80"
     environment:

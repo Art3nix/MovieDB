@@ -4,7 +4,7 @@ import unicodedata
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from semwork.extensions import db
+from moviedb.extensions import db
 
 
 class Movie(db.Model):  # pylint: disable=R0902,R0903; # sqlalchemy class used to only store data

@@ -3,14 +3,14 @@
 from flask import Flask
 from config import Config
 
-from semwork.extensions import db, bcrypt, login_manager, migrate
-from semwork.models.movie import Movie
-from semwork.models.user import User
-from semwork.import_data import load_dataset
+from moviedb.extensions import db, bcrypt, login_manager, migrate
+from moviedb.models.movie import Movie
+from moviedb.models.user import User
+from moviedb.import_data import load_dataset
 
-from semwork.home import bp as home_bp
-from semwork.users import bp as users_bp
-from semwork.movies import bp as movies_bp
+from moviedb.home import bp as home_bp
+from moviedb.users import bp as users_bp
+from moviedb.movies import bp as movies_bp
 
 
 def create_app(config_class=Config):

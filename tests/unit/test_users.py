@@ -2,8 +2,8 @@
 
 from flask_login import current_user
 
-from semwork.extensions import db
-from semwork.models.user import User
+from moviedb.extensions import db
+from moviedb.models.user import User
 
 
 def test_login_pages(test_client):

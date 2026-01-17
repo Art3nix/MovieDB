@@ -11,7 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 
-from semwork.models.movie import Movie
+from moviedb.models.movie import Movie
 
 
 # revision identifiers, used by Alembic.

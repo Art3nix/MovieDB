@@ -3,13 +3,13 @@
 from datetime import datetime, timedelta
 from flask_login import current_user
 
-from semwork.extensions import db
-from semwork.import_data import load_dataset
-from semwork.models.movie import Movie
-from semwork.models.watch_later import WatchLater
-from semwork.models.watch_list import WatchList
-from semwork.models.user import User
-from semwork.home.services import (
+from moviedb.extensions import db
+from moviedb.import_data import load_dataset
+from moviedb.models.movie import Movie
+from moviedb.models.watch_later import WatchLater
+from moviedb.models.watch_list import WatchList
+from moviedb.models.user import User
+from moviedb.home.services import (
     find_and_calculate_recommendations,
     get_new_recommendations,
     get_watch_again,

@@ -1,8 +1,8 @@
 """Module testing importing."""
 
-from semwork.import_data import load_dataset
-from semwork.extensions import db
-from semwork.models.movie import Movie
+from moviedb.import_data import load_dataset
+from moviedb.extensions import db
+from moviedb.models.movie import Movie
 
 
 def test_load_dataset(test_client):
