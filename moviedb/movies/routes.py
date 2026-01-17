@@ -7,12 +7,12 @@ from sqlalchemy import select, case
 from flask import request, render_template, redirect, url_for
 from flask_login import login_required, current_user
 
-from semwork.extensions import db
-from semwork.movies import bp  # pylint: disable=R0401; # noqa
-from semwork.movies.filters import movie_name_to_url
-from semwork.models.movie import Movie
-from semwork.models.watch_list import WatchList
-from semwork.models.watch_later import WatchLater
+from moviedb.extensions import db
+from moviedb.movies import bp  # pylint: disable=R0401; # noqa
+from moviedb.movies.filters import movie_name_to_url
+from moviedb.models.movie import Movie
+from moviedb.models.watch_list import WatchList
+from moviedb.models.watch_later import WatchLater
 
 
 @bp.route('/browse')

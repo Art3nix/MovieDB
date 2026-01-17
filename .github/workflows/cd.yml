@@ -1,0 +1,25 @@
+name: Deploy MovieDB
+
+on:
+  push:
+    branches: [production]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/MovieDB
+            git fetch origin
+            git reset --hard origin/production
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            sudo systemctl restart moviedb

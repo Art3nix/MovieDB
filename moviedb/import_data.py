@@ -2,7 +2,7 @@
 
 import csv
 
-from semwork.models.movie import Movie
+from moviedb.models.movie import Movie
 
 
 def load_dataset(db, file_name):

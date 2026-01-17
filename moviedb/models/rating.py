@@ -4,7 +4,7 @@ from typing_extensions import Annotated
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from semwork.extensions import db
+from moviedb.extensions import db
 
 IntPk = Annotated[int, mapped_column(primary_key=True)]
 

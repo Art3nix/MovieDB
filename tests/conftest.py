@@ -4,11 +4,11 @@ from datetime import datetime
 import pytest
 
 import config
-from semwork import create_app
-from semwork.models.user import User
-from semwork.models.movie import Movie
-from semwork.models.watch_later import WatchLater
-from semwork.models.watch_list import WatchList
+from moviedb import create_app
+from moviedb.models.user import User
+from moviedb.models.movie import Movie
+from moviedb.models.watch_later import WatchLater
+from moviedb.models.watch_list import WatchList
 
 
 @pytest.fixture

@@ -3,9 +3,9 @@
 from flask import render_template, request, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 
-from semwork.users import bp  # pylint: disable=R0401; # noqa
-from semwork.models.user import User
-from semwork.extensions import db, bcrypt
+from moviedb.users import bp  # pylint: disable=R0401; # noqa
+from moviedb.models.user import User
+from moviedb.extensions import db, bcrypt
 
 
 @bp.route('/login', methods=['GET', 'POST'])

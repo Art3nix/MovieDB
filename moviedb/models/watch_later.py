@@ -3,7 +3,7 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from semwork.extensions import db
+from moviedb.extensions import db
 
 
 class WatchLater(db.Model):  # pylint: disable=R0903; # sqlalchemy class used to only store data
