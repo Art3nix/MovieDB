@@ -39,11 +39,11 @@
                 {% for movie in watch_later %}
                 <div class="slider-item col-xl-2 col-md-3 col-sm-4">
                     <div class="card h-100">
-                        <img src="{{ movie.poster_link }}" class="card-img-top" alt="{{ movie.name }}">
+                        <img src="{{ movie.poster_path | tmdb_image }}" class="card-img-top" alt="{{ movie.title }}">
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">{{ movie.name }}</h5>
+                            <h5 class="card-title">{{ movie.title }}</h5>
                             <p class="card-text font-weight-light">{{ movie.release_year}}</p>
-                            <a href="{{ url_for('movies.movie', movie_id=movie.id, name=(movie.name | movie_name_to_url)) }}" class="btn btn-primary mt-auto">Details</a>
+                            <a href="{{ url_for('movies.movie', movie_id=movie.id, name=(movie.title | movie_name_to_url)) }}" class="btn btn-primary mt-auto">Details</a>
                         </div>
                     </div>
                 </div>
@@ -66,11 +66,11 @@
                 {% for movie in recommendations %}
                 <div class="slider-item col-xl-2 col-md-3 col-sm-4">
                     <div class="card h-100">
-                        <img src="{{ movie[0].poster_link }}" class="card-img-top" alt="{{ movie[0].name }}">
+                        <img src="{{ movie.poster_path | tmdb_image }}" class="card-img-top" alt="{{ movie[0].title }}">
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">{{ movie[0].name }}</h5>
+                            <h5 class="card-title">{{ movie[0].title }}</h5>
                             <p class="card-text font-weight-light">{{ movie[0].release_year}}</p>
-                            <a href="{{ url_for('movies.movie', movie_id=movie[0].id, name=(movie[0].name | movie_name_to_url)) }}" class="btn btn-primary mt-auto">Details</a>
+                            <a href="{{ url_for('movies.movie', movie_id=movie[0].id, name=(movie[0].title | movie_name_to_url)) }}" class="btn btn-primary mt-auto">Details</a>
                         </div>
                     </div>
                 </div>
@@ -93,11 +93,11 @@
                 {% for movie in watch_again %}
                 <div class="slider-item col-xl-2 col-md-3 col-sm-4">
                     <div class="card h-100">
-                        <img src="{{ movie.poster_link }}" class="card-img-top" alt="{{ movie.name }}">
+                        <img src="{{ movie.poster_path | tmdb_image }}" class="card-img-top" alt="{{ movie.title }}">
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">{{ movie.name }}</h5>
+                            <h5 class="card-title">{{ movie.title }}</h5>
                             <p class="card-text font-weight-light">{{ movie.release_year}}</p>
-                            <a href="{{ url_for('movies.movie', movie_id=movie.id, name=(movie.name | movie_name_to_url)) }}" class="btn btn-primary mt-auto">Details</a>
+                            <a href="{{ url_for('movies.movie', movie_id=movie.id, name=(movie.title | movie_name_to_url)) }}" class="btn btn-primary mt-auto">Details</a>
                         </div>
                     </div>
                 </div>

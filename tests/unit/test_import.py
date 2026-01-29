@@ -11,26 +11,20 @@ def test_load_dataset(test_client):
     with test_client.application.app_context():
         load_dataset(db, 'tests/test_dataset.csv')
         try:
-            assert db.session.query(Movie).filter_by(name='Movie 1').count() > 0
+            assert db.session.query(Movie).filter_by(title='Movie 1').count() > 0
             assert (
                 db.session.query(Movie)
                 .filter_by(
-                    name='Movie 2',
-                    unaccented_name='Movie 2',
-                    poster_link='https://link-to-movie-2.com',
+                    title='Movie 2',
+                    unaccented_title='Movie 2',
                     release_year=2002,
-                    certificate='UA',
                     runtime='90 min',
-                    genre='GenreA, GenreB',
-                    imdb_rating=7.9,
                     summary='Quick summary of the movie',
+                    poster_path='https://link-to-movie-2.com',
+                    certificate='UA',
+                    imdb_rating=7.9,
                     meta_score=80,
-                    director='Christopher Nolan',
-                    star1='Arnold Schwarzenegger',
-                    star2='Brad Pitt',
-                    star3='Michael Caine',
-                    star4='Scarlett Johansson',
-                    no_of_votes=2343110,
+                    imdb_votes=2343110,
                     gross_earned=28341469,
                 )
                 .count()
@@ -38,12 +32,12 @@ def test_load_dataset(test_client):
             )
             assert (
                 db.session.query(Movie)
-                .filter(Movie.poster_link.ilike('%https://link-to-movie-%'))
+                .filter(Movie.poster_path.ilike('%https://link-to-movie-%'))
                 .count()
                 == 9
             )
         finally:
             db.session.query(Movie).filter(
-                Movie.poster_link.ilike('%https://link-to-movie-%')
+                Movie.poster_path.ilike('%https://link-to-movie-%')
             ).delete()
             db.session.commit()

@@ -6,8 +6,14 @@ services:
     stop_signal: SIGINT
     volumes:
       - .:/usr/src/app/
+      - ./datasets/imdb:/data/imdb:ro
+      - ./datasets/tmdb:/data/tmdb:ro
+      - ./datasets/hf:/data/hf:ro
     ports:
       - 8000:8000
+    environment:
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - OMDB_API_KEY=${OMDB_API_KEY}
     depends_on:
       - db
   db:

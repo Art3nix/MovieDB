@@ -13,8 +13,8 @@ def load_dataset(db, file_name):
         lines_read = 0
         for row in reader:
             new_movie = Movie(
-                name=row['Series_Title'],
-                poster_link=row['Poster_Link'],
+                title=row['Series_Title'],
+                poster_path=row['Poster_Link'],
                 release_year=row['Released_Year'],
                 runtime=row['Runtime'],
                 genre=row['Genre'],

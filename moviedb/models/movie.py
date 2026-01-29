@@ -2,7 +2,7 @@
 
 import unicodedata
 
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from moviedb.extensions import db
 
@@ -11,69 +11,59 @@ class Movie(db.Model):  # pylint: disable=R0902,R0903; # sqlalchemy class used t
     """Class representing table Movie in database."""
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
-    unaccented_name: Mapped[str]
-    poster_link: Mapped[str]
-    release_year: Mapped[int]
-    certificate: Mapped[str] = mapped_column(nullable=True)
-    runtime: Mapped[str]
-    genre: Mapped[str]
-    imdb_rating: Mapped[float]
-    summary: Mapped[str]
-    meta_score: Mapped[int] = mapped_column(nullable=True)
-    director: Mapped[str]
-    star1: Mapped[str]
-    star2: Mapped[str]
-    star3: Mapped[str]
-    star4: Mapped[str]
-    no_of_votes: Mapped[int]
-    gross_earned: Mapped[int] = mapped_column(nullable=True)
+    imdb_id: Mapped[str | None] = mapped_column(unique=True)
+    tmdb_id: Mapped[int | None]
+    title: Mapped[str]
+    unaccented_title: Mapped[str]
+    release_year: Mapped[int | None]
+    runtime: Mapped[str | None]
+    tagline: Mapped[str | None]
+    summary: Mapped[str | None]
+    keywords: Mapped[str | None]
+    poster_path: Mapped[str | None]
+    backdrop_path: Mapped[str | None]
+    language: Mapped[str | None]
+    imdb_rating: Mapped[float | None]
+    imdb_votes: Mapped[int | None]
+    meta_score: Mapped[int | None]
+    certificate: Mapped[str | None]
+    gross_earned: Mapped[int | None]
+
+    genres = relationship('MovieGenre', back_populates='movie', cascade='all, delete-orphan')
+    cast = relationship('MovieCast', back_populates='movie', cascade='all, delete-orphan')
+    crew = relationship('MovieCrew', back_populates='movie', cascade='all, delete-orphan')
+    productions = relationship('MovieProduction', back_populates='movie', cascade='all, delete-orphan')
+
 
     def __init__(
         self,
-        name: str,
-        poster_link: str,
+        title: str,
         release_year: int,
         runtime: str,
-        genre: str,
-        imdb_rating: float,
         summary: str,
-        director: str,
-        star1: str,
-        star2: str,
-        star3: str,
-        star4: str,
-        no_of_votes: int,
+        poster_path: str,
+        imdb_rating: float,
+        imdb_votes: int
     ):  # pylint: disable=R0913; # related to previous warnings
-        self.name = name
-        self.unaccented_name = unicodedata.normalize('NFD', name).encode('ASCII', 'ignore').decode("utf-8")
-        self.poster_link = poster_link
+        self.title = title
+        self.unaccented_title = unicodedata.normalize('NFD', title).encode('ASCII', 'ignore').decode("utf-8")
         self.release_year = release_year
         self.runtime = runtime
-        self.genre = genre
-        self.imdb_rating = imdb_rating
         self.summary = summary
-        self.director = director
-        self.star1 = star1
-        self.star2 = star2
-        self.star3 = star3
-        self.star4 = star4
-        self.no_of_votes = no_of_votes
+        self.poster_path = poster_path
+        self.imdb_rating = imdb_rating
+        self.imdb_votes = imdb_votes
 
     def __repr__(self):
         return (
-            f'<Movie {self.name}>'
-            f' {self.unaccented_name}'
-            f' {self.poster_link}'
+            f'<Movie {self.title}>'
+            f' {self.imdb_id}'
+            f' {self.tmdb_id}'
+            f' {self.unaccented_title}'
             f' {self.release_year}'
             f' {self.runtime}'
-            f' {self.genre}'
-            f' {self.imdb_rating}'
             f' {self.summary}'
-            f' {self.director}'
-            f' {self.star1}'
-            f' {self.star2}'
-            f' {self.star3}'
-            f' {self.star4}'
-            f' {self.no_of_votes}'
+            f' {self.poster_path}'
+            f' {self.imdb_rating}'
+            f' {self.imdb_votes}'
         )
