@@ -7,7 +7,7 @@ from moviedb.extensions import db
 from moviedb.import_data import load_dataset
 from moviedb.models.movie import Movie
 from moviedb.models.watch_later import WatchLater
-from moviedb.models.watch_list import WatchList
+from moviedb.models.watch_history import WatchHistory
 from moviedb.models.user import User
 from moviedb.home.services import (
     find_and_calculate_recommendations,
@@ -50,7 +50,7 @@ def test_homepage_access(test_client, new_user, new_movie):
     try:
         db.session.add(new_movie)
         assert (
-            db.session.query(Movie).filter_by(poster_link=new_movie.poster_link).first()
+            db.session.query(Movie).filter_by(poster_path=new_movie.poster_path).first()
             is not None
         )
         db.session.add(WatchLater(user_id=new_user.id, movie_id=new_movie.id))
@@ -90,8 +90,8 @@ def test_find_and_calculate_recommendations(test_client, new_user):
         )
         assert current_user.username == 'TestClient'
         watch_date = datetime.strptime('2024-02-01 00:00:00', '%Y-%m-%d %H:%M:%S')
-        movie_ids = dict(db.session.query(Movie.name, Movie.id)
-                        .filter(Movie.poster_link.ilike('%https://link-to-movie-%'))
+        movie_ids = dict(db.session.query(Movie.title, Movie.id)
+                        .filter(Movie.poster_path.ilike('%https://link-to-movie-%'))
                         .all())
 
         assert len(movie_ids) == 9
@@ -111,14 +111,14 @@ def test_find_and_calculate_recommendations(test_client, new_user):
         recommendations = find_and_calculate_recommendations(
             [db.session.query(Movie).filter_by(id=movie_ids['Movie 9']).first()]
         )
-        assert {(movie[0].name, movie[1]) for movie in recommendations.all()[:2]} == {
+        assert {(movie[0].title, movie[1]) for movie in recommendations.all()[:2]} == {
             ('Movie 9', 210),
             ('Movie 7', 177),
         }
 
         # 2 genres
         recommendations = find_and_calculate_recommendations([wh[0]])
-        assert {(movie[0].name, movie[1]) for movie in recommendations.all()[:2]} == {
+        assert {(movie[0].title, movie[1]) for movie in recommendations.all()[:2]} == {
             ('Movie 1', 210),
             ('Movie 2', 170.5),
         }
@@ -126,29 +126,29 @@ def test_find_and_calculate_recommendations(test_client, new_user):
         # 3 genres
         recommendations = find_and_calculate_recommendations(wh)
 
-        assert {movie[0].name for movie in recommendations.all()[:3]} == {
-            movie.name for movie in wh
+        assert {movie[0].title for movie in recommendations.all()[:3]} == {
+            movie.title for movie in wh
         }
-        assert {(movie[0].name, movie[1]) for movie in recommendations.all()[:3]} == {
+        assert {(movie[0].title, movie[1]) for movie in recommendations.all()[:3]} == {
             ('Movie 1', 188.75),
             ('Movie 2', 186.75),
             ('Movie 3', 158),
         }
 
-        db.session.add(WatchList(new_user.id, movie_ids['Movie 1'], watch_date))
+        db.session.add(WatchHistory(new_user.id, movie_ids['Movie 1'], watch_date))
 
         # Movie 1 in watchlist so it should not be recommended
         recommendations = find_and_calculate_recommendations(wh)
 
-        assert 'Movie 1' not in [movie[0].name for movie in recommendations.all()]
-        assert {(movie[0].name, movie[1]) for movie in recommendations.all()[:2]} == {
+        assert 'Movie 1' not in [movie[0].title for movie in recommendations.all()]
+        assert {(movie[0].title, movie[1]) for movie in recommendations.all()[:2]} == {
             ('Movie 2', 186.75),
             ('Movie 3', 158),
         }
     finally:
-        db.session.query(WatchList).filter_by(user_id=new_user.id).delete()
+        db.session.query(WatchHistory).filter_by(user_id=new_user.id).delete()
         db.session.query(Movie).filter(
-            Movie.poster_link.ilike('%https://link-to-movie-%')
+            Movie.poster_path.ilike('%https://link-to-movie-%')
         ).delete()
         db.session.query(User).filter_by(username=new_user.username).delete()
         db.session.commit()
@@ -168,8 +168,8 @@ def test_get_new_recommendations(test_client, new_user):
         )
         assert current_user.username == 'TestClient'
         watch_date = datetime.strptime('2024-02-01 00:00:00', '%Y-%m-%d %H:%M:%S')
-        movie_ids = dict(db.session.query(Movie.name, Movie.id)
-                        .filter(Movie.poster_link.ilike('%https://link-to-movie-%'))
+        movie_ids = dict(db.session.query(Movie.title, Movie.id)
+                        .filter(Movie.poster_path.ilike('%https://link-to-movie-%'))
                         .all())
 
         assert len(movie_ids) == 9
@@ -195,7 +195,7 @@ def test_get_new_recommendations(test_client, new_user):
         assert recommendations == []
 
         for i in range(1, 6):
-            db.session.add(WatchList(new_user.id, movie_ids[f'Movie {i}'], watch_date))
+            db.session.add(WatchHistory(new_user.id, movie_ids[f'Movie {i}'], watch_date))
             watch_date = watch_date + timedelta(days=1)
 
         recommendations = get_new_recommendations(maximum=3, recent_limit=0)
@@ -206,16 +206,16 @@ def test_get_new_recommendations(test_client, new_user):
 
         recommendations = get_new_recommendations(maximum=4, recent_limit=2)
         assert len(recommendations) == 4
-        assert {movie[0].name for movie in recommendations} == {
+        assert {movie[0].title for movie in recommendations} == {
             'Movie 6',
             'Movie 7',
             'Movie 8',
             'Movie 9',
         }
     finally:
-        db.session.query(WatchList).filter_by(user_id=new_user.id).delete()
+        db.session.query(WatchHistory).filter_by(user_id=new_user.id).delete()
         db.session.query(Movie).filter(
-            Movie.poster_link.ilike('%https://link-to-movie-%')
+            Movie.poster_path.ilike('%https://link-to-movie-%')
         ).delete()
         db.session.query(User).filter_by(username=new_user.username).delete()
         db.session.commit()
@@ -235,8 +235,8 @@ def test_watch_again(test_client, new_user):
         )
         assert current_user.username == 'TestClient'
         watch_date = datetime.now() - timedelta(days=30)
-        movie_ids = dict(db.session.query(Movie.name, Movie.id)
-                        .filter(Movie.poster_link.ilike('%https://link-to-movie-%'))
+        movie_ids = dict(db.session.query(Movie.title, Movie.id)
+                        .filter(Movie.poster_path.ilike('%https://link-to-movie-%'))
                         .all())
 
         assert len(movie_ids) == 9
@@ -245,42 +245,42 @@ def test_watch_again(test_client, new_user):
         assert watch_again == []
 
         # add movies to watch history
-        db.session.add(WatchList(new_user.id, movie_ids['Movie 1'], watch_date))
+        db.session.add(WatchHistory(new_user.id, movie_ids['Movie 1'], watch_date))
         db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=7))
+            WatchHistory(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=7))
         )
         db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=14))
+            WatchHistory(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=14))
         )
         db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=21))
+            WatchHistory(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=21))
         )
         db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=28))
+            WatchHistory(new_user.id, movie_ids['Movie 1'], watch_date + timedelta(days=28))
         )
-        db.session.add(WatchList(new_user.id, movie_ids['Movie 2'], watch_date))
+        db.session.add(WatchHistory(new_user.id, movie_ids['Movie 2'], watch_date))
         db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 2'], watch_date + timedelta(days=7))
-        )
-        db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 2'], watch_date + timedelta(days=14))
+            WatchHistory(new_user.id, movie_ids['Movie 2'], watch_date + timedelta(days=7))
         )
         db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 2'], watch_date + timedelta(days=21))
+            WatchHistory(new_user.id, movie_ids['Movie 2'], watch_date + timedelta(days=14))
         )
-        db.session.add(WatchList(new_user.id, movie_ids['Movie 3'], watch_date))
-        db.session.add(WatchList(new_user.id, movie_ids['Movie 4'], watch_date))
         db.session.add(
-            WatchList(new_user.id, movie_ids['Movie 4'], watch_date + timedelta(days=14))
+            WatchHistory(new_user.id, movie_ids['Movie 2'], watch_date + timedelta(days=21))
+        )
+        db.session.add(WatchHistory(new_user.id, movie_ids['Movie 3'], watch_date))
+        db.session.add(WatchHistory(new_user.id, movie_ids['Movie 4'], watch_date))
+        db.session.add(
+            WatchHistory(new_user.id, movie_ids['Movie 4'], watch_date + timedelta(days=14))
         )
 
         watch_again = get_watch_again()
         assert len(watch_again) == 2
-        assert [movie.name for movie in watch_again] == ['Movie 4', 'Movie 2']
+        assert [movie.title for movie in watch_again] == ['Movie 4', 'Movie 2']
     finally:
-        db.session.query(WatchList).filter_by(user_id=new_user.id).delete()
+        db.session.query(WatchHistory).filter_by(user_id=new_user.id).delete()
         db.session.query(Movie).filter(
-            Movie.poster_link.ilike('%https://link-to-movie-%')
+            Movie.poster_path.ilike('%https://link-to-movie-%')
         ).delete()
         db.session.query(User).filter_by(username=new_user.username).delete()
         db.session.commit()

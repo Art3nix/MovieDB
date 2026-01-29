@@ -17,4 +17,4 @@ class WatchLater(db.Model):  # pylint: disable=R0903; # sqlalchemy class used to
         self.movie_id = movie_id
 
     def __repr__(self):
-        return f'<Watchlater {self.id}>' f' User: {self.user_id}' f' Movie: {self.movie_id}'
+        return f'<WatchLater user={self.user_id} movie={self.movie_id}>'

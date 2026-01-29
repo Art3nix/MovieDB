@@ -1,4 +1,4 @@
-"""Module defining SQLAlchemy model of WatchList."""
+"""Module defining SQLAlchemy model of WatchHistory."""
 
 from datetime import datetime
 
@@ -8,8 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from moviedb.extensions import db
 
 
-class WatchList(db.Model):  # pylint: disable=R0903; # sqlalchemy class used to only store data
-    """Class representing table WatchList in database."""
+class WatchHistory(db.Model):  # pylint: disable=R0903; # sqlalchemy class used to only store data
+    """Class representing table WatchHistory in database."""
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('user.id'), primary_key=True)
@@ -23,7 +23,7 @@ class WatchList(db.Model):  # pylint: disable=R0903; # sqlalchemy class used to 
 
     def __repr__(self):
         return (
-            f'<Watchlist {self.id}>'
+            f'<WatchHistory {self.id}>'
             f' User: {self.user_id}'
             f' Movie: {self.movie_id}'
             f' Date watched: {self.date_watched}'

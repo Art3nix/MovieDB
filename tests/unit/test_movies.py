@@ -8,7 +8,7 @@ from flask_login import current_user
 from moviedb.extensions import db
 from moviedb.models.movie import Movie
 from moviedb.models.watch_later import WatchLater
-from moviedb.models.watch_list import WatchList
+from moviedb.models.watch_history import WatchHistory
 from moviedb.models.user import User
 from moviedb.movies.filters import movie_name_to_url, query_empty, in_watch_later
 
@@ -61,7 +61,7 @@ def test_watch_later(test_client, new_movie):
 
     db.session.add(new_movie)
     assert (
-        db.session.query(Movie).filter_by(poster_link=new_movie.poster_link).first()
+        db.session.query(Movie).filter_by(poster_path=new_movie.poster_path).first()
         is not None
     )
 
@@ -101,12 +101,12 @@ def test_watch_later(test_client, new_movie):
         response = test_client.get('/movies/watch-history', follow_redirects=True)
         assert b'<span>Your Watch history is empty.</span>' not in response.data
         assert (
-            f'<h5 class="card-title">{new_movie.name}</h5>'.encode('UTF-8')
+            f'<h5 class="card-title">{new_movie.title}</h5>'.encode('UTF-8')
             in response.data
         )
     finally:
         # clear all test data
-        db.session.query(WatchList).filter_by(user_id=new_user.id).delete()
+        db.session.query(WatchHistory).filter_by(user_id=new_user.id).delete()
         db.session.query(User).filter_by(username=new_user.username).delete()
         db.session.query(Movie).filter_by(id=new_movie.id).delete()
         db.session.commit()
@@ -120,7 +120,7 @@ def test_browse_movies(test_client):
     assert b'<span>No movies are available.</span>' not in response.data
 
     db.session.query(WatchLater).delete()
-    db.session.query(WatchList).delete()
+    db.session.query(WatchHistory).delete()
     db.session.query(Movie).delete()
 
     response = test_client.get('/movies/browse')
@@ -132,7 +132,7 @@ def test_movie_page(test_client):
     """Test specific movie page."""
 
     movie = db.session.query(Movie).order_by(Movie.id.desc()).first()
-    url_name = movie_name_to_url(movie.name)
+    url_name = movie_name_to_url(movie.title)
     response = test_client.get(f'/movies/movie/{movie.id}-{url_name}')
     assert response.status_code == 200
 
@@ -151,8 +151,8 @@ def test_search_movie(test_client):
     """Test searching for movies."""
 
     movie = db.session.query(Movie).first()
-    response = test_client.post('/movies/search-movie', data={'search': movie.name})
-    assert f'<title>{movie.name}</title>'.encode('UTF-8') in response.data
+    response = test_client.post('/movies/search-movie', data={'search': movie.title})
+    assert f'<title>{movie.title}</title>'.encode('UTF-8') in response.data
 
     response = test_client.post(
         '/movies/search-movie', data={'search': ''}, follow_redirects=True
@@ -164,7 +164,7 @@ def test_search_movie(test_client):
     )
     assert response.request.path == "/movies/not-found"
 
-    assert db.session.query(Movie).filter_by(name='pkmjnhgs').first() is None
+    assert db.session.query(Movie).filter_by(title='pkmjnhgs').first() is None
     response = test_client.post(
         '/movies/search-movie', data={'search': 'pkmjnhgs'}, follow_redirects=True
     )
@@ -192,7 +192,7 @@ def test_watch_list_manipulation(test_client, new_movie):
 
     db.session.add(new_movie)
     assert (
-        db.session.query(Movie).filter_by(poster_link=new_movie.poster_link).first()
+        db.session.query(Movie).filter_by(poster_path=new_movie.poster_path).first()
         is not None
     )
     id_new_movie = new_movie.id
@@ -215,7 +215,7 @@ def test_watch_list_manipulation(test_client, new_movie):
         )
         assert (
             response.request.path
-            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}"
+            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}"
         )
         assert b'<span class="w-100 text-danger">Select the date</span>' in response.data
 
@@ -231,14 +231,14 @@ def test_watch_list_manipulation(test_client, new_movie):
         )
         assert (
             response.request.path
-            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}"
+            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}"
         )
         assert (
             b'<span class="w-100 text-success">Added this movie to watch list</span>'
             in response.data
         )
         id_new_watch_list = (
-            db.session.query(WatchList).filter_by(user_id=new_user.id).first().id
+            db.session.query(WatchHistory).filter_by(user_id=new_user.id).first().id
         )
 
         # log in as impostor
@@ -267,7 +267,7 @@ def test_watch_list_manipulation(test_client, new_movie):
             f'/movies/remove-from-watch-list/{id_new_watch_list}', follow_redirects=True
         )
         assert response.request.path == "/movies/watch-history"
-        assert db.session.query(WatchList).filter_by(user_id=new_user.id).first() is None
+        assert db.session.query(WatchHistory).filter_by(user_id=new_user.id).first() is None
 
         # non existing movie
         id_new_movie = new_movie.id
@@ -283,14 +283,14 @@ def test_watch_list_manipulation(test_client, new_movie):
         )
         assert response.request.path == "/movies/not-found"
 
-        watch_list_count = db.session.query(WatchList).count()
+        watch_list_count = db.session.query(WatchHistory).count()
         response = test_client.post(
             f'/movies/remove-from-watch-list/{id_new_watch_list}', follow_redirects=True
         )
         assert response.request.path == "/movies/watch-history"
-        assert db.session.query(WatchList).count() == watch_list_count
+        assert db.session.query(WatchHistory).count() == watch_list_count
     finally:
-        db.session.query(WatchList).filter_by(user_id=new_user.id).delete()
+        db.session.query(WatchHistory).filter_by(user_id=new_user.id).delete()
         db.session.query(User).filter_by(username=new_user.username).delete()
         db.session.query(User).filter_by(username=impostor.username).delete()
         db.session.query(Movie).filter_by(id=id_new_movie).delete()
@@ -310,7 +310,7 @@ def test_watch_history(test_client, new_movie):
 
     db.session.add(new_movie)
     assert (
-        db.session.query(Movie).filter_by(poster_link=new_movie.poster_link).first()
+        db.session.query(Movie).filter_by(poster_path=new_movie.poster_path).first()
         is not None
     )
 
@@ -344,12 +344,12 @@ def test_watch_history(test_client, new_movie):
         response = test_client.get('/movies/watch-history', follow_redirects=True)
         assert b'<span>Your Watch history is empty.</span>' not in response.data
         assert (
-            f'<h5 class="card-title">{new_movie.name}</h5>'.encode('UTF-8')
+            f'<h5 class="card-title">{new_movie.title}</h5>'.encode('UTF-8')
             in response.data
         )
     finally:
         # clear all test data
-        db.session.query(WatchList).filter_by(user_id=new_user.id).delete()
+        db.session.query(WatchHistory).filter_by(user_id=new_user.id).delete()
         db.session.query(User).filter_by(username=new_user.username).delete()
         db.session.query(Movie).filter_by(id=new_movie.id).delete()
         db.session.commit()
@@ -369,7 +369,7 @@ def test_watch_later_manipulation(test_client, new_movie):
 
     db.session.add(new_movie)
     assert (
-        db.session.query(Movie).filter_by(poster_link=new_movie.poster_link).first()
+        db.session.query(Movie).filter_by(poster_path=new_movie.poster_path).first()
         is not None
     )
     id_new_movie = new_movie.id
@@ -382,7 +382,7 @@ def test_watch_later_manipulation(test_client, new_movie):
         assert response.request.path == "/users/login"
 
         response = test_client.get(
-            f'/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}'
+            f'/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}'
         )
         assert (
             b'<button type="submit" class="btn btn-primary" disabled>Add to watch later</button>'
@@ -396,7 +396,7 @@ def test_watch_later_manipulation(test_client, new_movie):
         assert current_user.username == 'TestClient'
 
         response = test_client.get(
-            f'/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}'
+            f'/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}'
         )
         assert (
             b'<button type="submit" class="btn btn-primary">Add to watch later</button>'
@@ -409,7 +409,7 @@ def test_watch_later_manipulation(test_client, new_movie):
         )
         assert (
             response.request.path
-            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}"
+            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}"
         )
         assert (
             b'<button type="submit" class="btn btn-primary">Remove from watch later</button>'
@@ -422,7 +422,7 @@ def test_watch_later_manipulation(test_client, new_movie):
         )
         assert (
             response.request.path
-            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}"
+            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}"
         )
 
         # remove movie from watch later
@@ -431,7 +431,7 @@ def test_watch_later_manipulation(test_client, new_movie):
         )
         assert (
             response.request.path
-            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}"
+            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}"
         )
         assert (
             b'<button type="submit" class="btn btn-primary">Add to watch later</button>'
@@ -445,7 +445,7 @@ def test_watch_later_manipulation(test_client, new_movie):
         )
         assert (
             response.request.path
-            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.name)}"
+            == f"/movies/movie/{new_movie.id}-{movie_name_to_url(new_movie.title)}"
         )
 
         # non existing movie

@@ -8,7 +8,7 @@ from moviedb import create_app
 from moviedb.models.user import User
 from moviedb.models.movie import Movie
 from moviedb.models.watch_later import WatchLater
-from moviedb.models.watch_list import WatchList
+from moviedb.models.watch_history import WatchHistory
 
 
 @pytest.fixture
@@ -24,31 +24,25 @@ def new_movie():
     """Fixture for creating new movie."""
 
     movie = Movie(
-        name='Gekijô-ban: Air/Magokoro',
-        poster_link='https://testPoster.com',
+        title='Gekijô-ban: Air/Magokoro',
         release_year=1994,
         runtime='142 min',
-        genre='Action, Drama, Fantasy',
-        imdb_rating=9.3,
         summary='Long story short...',
-        director='Frank Darabont',
-        star1='Tim Robbins',
-        star2='Morgan Freeman',
-        star3='Bob Gunton',
-        star4='William Sadler',
-        no_of_votes=2343110,
+        poster_path='https://testPoster.com',
+        imdb_rating=9.3,
+        imdb_votes=2343110,
     )
     return movie
 
 
 @pytest.fixture
-def new_watch_list():
+def new_watch_history():
     """Fixture for creating new watch list movie."""
 
-    watch_list = WatchList(
+    watch_history = WatchHistory(
         1, 1, datetime.strptime('2024-02-01 00:00:00', '%Y-%m-%d %H:%M:%S')
     )
-    return watch_list
+    return watch_history
 
 
 @pytest.fixture
