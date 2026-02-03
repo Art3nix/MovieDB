@@ -1,16 +1,14 @@
 """Business logic of the home sites."""
 
-from collections import Counter
-from datetime import datetime
-from sqlalchemy import func, case
+from datetime import datetime, timedelta
+from sqlalchemy import func
 from flask_login import current_user
 
 from moviedb.extensions import db
-from moviedb.models.movie import Movie
-from moviedb.models.watch_history import WatchHistory
+from moviedb.models import Movie, WatchHistory, MovieCast, MovieGenre, MovieCrew
 
 
-def get_new_recommendations(maximum: int = 30, recent_limit: int = 10):
+def get_new_recommendations(maximum: int = 30, recent_limit: int = 20):
     """Get number of new recommended movies
     based on the recent watch history."""
 
@@ -23,7 +21,7 @@ def get_new_recommendations(maximum: int = 30, recent_limit: int = 10):
         .limit(recent_limit)
     )
 
-    if recent_wh.count() == 0:
+    if not recent_wh:
         return []
 
     recommendations = find_and_calculate_recommendations(recent_wh)
@@ -32,110 +30,138 @@ def get_new_recommendations(maximum: int = 30, recent_limit: int = 10):
     return recommendations.limit(maximum).all()
 
 
-def find_and_calculate_recommendations(watch_history: Movie):
-    """Calculate recommend value of each movie
-    based on given watch history."""
+def find_and_calculate_recommendations(recent_movies_query):
 
-#    common_genres = 3
+    # recent movie ids
+    recent_ids = recent_movies_query.with_entities(Movie.id).statement
 
-    # genres
-#    recent_genres = [genre for entry in watch_history for genre in entry.genre.split(', ')]
-#    c = Counter(recent_genres)
-#    recent_genres = c.most_common(common_genres)
-#    if len(recent_genres) == 1:
-#        recent_genres.append(recent_genres[0])
-#        recent_genres.append(recent_genres[0])
-#    elif len(recent_genres) == 2:
-#        recent_genres.append(recent_genres[1])
 
-    # years
-    release_years = [entry.release_year for entry in watch_history]
-    avg_released = sum(release_years) / len(release_years)
-
-    # directors
-#    directors = [entry.director for entry in watch_history]
-
-    # actors
-#    actors = (
-#        [entry.star1 for entry in watch_history]
-#        + [entry.star2 for entry in watch_history]
-#        + [entry.star3 for entry in watch_history]
-#        + [entry.star4 for entry in watch_history]
-#    )
-
-    # recommend_value = genre1 * 100 + genre2 * 50 + genre3 * 20 - yearDist * 0.25 + director * 20 + star1 * 5 + star2 * 5 + star3 * 5 + star4 * 5
-    recommend_value_col = (
-#        case((Movie.genre.contains(recent_genres[0][0]), 1), else_=0) * 100
-#        + case((Movie.genre.contains(recent_genres[1][0]), 1), else_=0) * 50
-#        + case((Movie.genre.contains(recent_genres[2][0]), 1), else_=0) * 20
-        - func.abs(Movie.release_year - avg_released) * 0.25
-#        + case((Movie.director.in_(directors), 1), else_=0) * 20
-        + (
-#            case((Movie.star1.in_(actors), 1), else_=0)
-#            + case((Movie.star2.in_(actors), 1), else_=0)
-#            + case((Movie.star3.in_(actors), 1), else_=0)
-#            + case((Movie.star4.in_(actors), 1), else_=0)
+    # genre counts
+    recent_genres = (
+        db.session.query(
+            MovieGenre.genre_id.label("genre_id"),
+            func.count().label("cnt")
         )
-        * 5
-    ).label('recommend_value')
-    watched_ids = (
-        db.session.query(Movie.id)
-        .join(WatchHistory, Movie.id == WatchHistory.movie_id)
-        .where(WatchHistory.user_id == current_user.id)
-    )
-    recommendations = (
-        db.session.query(Movie)
-        .add_columns(recommend_value_col)
-        .where(Movie.id.not_in(watched_ids))
-        .order_by(recommend_value_col.desc())
+        .filter(MovieGenre.movie_id.in_(recent_ids))
+        .group_by(MovieGenre.genre_id)
+        .subquery()
     )
 
-    return recommendations
+    # cast counts
+    recent_cast = (
+        db.session.query(
+            MovieCast.person_id.label("person_id"),
+            func.count().label("cnt")
+        )
+        .filter(MovieCast.movie_id.in_(recent_ids))
+        .group_by(MovieCast.person_id)
+        .subquery()
+    )
+
+    # director counts
+    recent_directors = (
+        db.session.query(
+            MovieCrew.person_id.label("person_id"),
+            func.count().label("cnt")
+        )
+        .filter(MovieCrew.movie_id.in_(recent_ids))
+        .filter(MovieCrew.role == "director")
+        .group_by(MovieCrew.person_id)
+        .subquery()
+    )
+
+    # calculate scores
+    genre_score = func.coalesce(func.sum(recent_genres.c.cnt), 0)
+    cast_score = func.coalesce(func.sum(recent_cast.c.cnt), 0)
+    director_score = func.coalesce(func.sum(recent_directors.c.cnt), 0)
+    rating_score = func.coalesce(Movie.imdb_rating, 0)
+    total_score = (
+        genre_score * 3 +
+        cast_score  * 4 +
+        director_score * 6 +
+        rating_score / 2
+    )
+
+    # ---- Main query ----
+    recommendations = (
+        db.session.query(
+            Movie,
+            genre_score.label("g"),
+            cast_score.label("c"),
+            director_score.label("d"),
+            rating_score.label("r"),
+            total_score.label("score")
+        )
+        # genres
+        .outerjoin(MovieGenre, Movie.id == MovieGenre.movie_id)
+        .outerjoin(recent_genres, MovieGenre.genre_id == recent_genres.c.genre_id)
+        # cast
+        .outerjoin(MovieCast, Movie.id == MovieCast.movie_id)
+        .outerjoin(recent_cast, MovieCast.person_id == recent_cast.c.person_id)
+        # directors
+        .outerjoin(MovieCrew, Movie.id == MovieCrew.movie_id)
+        .outerjoin(
+            recent_directors,
+            MovieCrew.person_id == recent_directors.c.person_id
+        )
+        .filter(~Movie.id.in_(recent_ids))
+        .group_by(Movie.id)
+        .having(total_score > 0)
+        # at least 2 same genres, 1 director or some cast
+        .having(
+            (genre_score + cast_score + director_score) >= 2
+        )
+        .order_by(total_score.desc())
+    )
+
+    return recommendations.with_entities(Movie)
 
 
 def get_watch_again():
-    """Get movies that could be watched again."""
+    """Get movies that could be watched again based on watch patterns."""
 
-    # order watch history by movies and then by date watched in ascending order
+    # 1. Load watch history, ordered by movie and date
     watch_history = (
         db.session.query(Movie, WatchHistory)
         .join(WatchHistory, Movie.id == WatchHistory.movie_id)
-        .where(WatchHistory.user_id == current_user.id)
-        .order_by(Movie.id)
-        .order_by(WatchHistory.date_watched)
+        .filter(WatchHistory.user_id == current_user.id)
+        .order_by(Movie.id, WatchHistory.date_watched)
         .all()
     )
 
-    if len(watch_history) == 0:
+    if not watch_history:
         return []
 
     watch_again = []
 
-    i = 1
-    dates = [watch_history[0][1].date_watched]
+    i = 0
     while i < len(watch_history):
-        # go through whole watch history
-        movie = watch_history[i]
+        movie, _ = watch_history[i]
+        # Collect all dates for this movie
+        dates = []
+        while i < len(watch_history) and watch_history[i][0].id == movie.id:
+            dates.append(watch_history[i][1].date_watched)
+            i += 1
 
-        if movie[0].id == watch_history[i - 1][0].id:
-            # same movies as previous one
-            dates.append(movie[1].date_watched)
-        elif len(dates) > 1:
-            # different movie and previous movie id has been more than once in wh
-            diff = dates[-1] - dates[-2]
-            if dates[-1] + diff < datetime.now():
-                # since last time watched the interval between dates watched has passed
-                watch_again.append((dates[-1] + diff - datetime.now(), watch_history[i - 1][0]))
-            dates = [movie[1].date_watched]
-        i += 1
+        # Only consider movies watched at least twice
+        if len(dates) < 2:
+            continue
 
-    # check last movie
-    if len(dates) > 1:
-        diff = dates[-1] - dates[-2]
-        if dates[-1] + diff < datetime.now():
-            watch_again.append((datetime.now() - (dates[-1] + diff), watch_history[i - 1][0]))
-        dates = [movie[1].date_watched]
+        # Calculate average interval between consecutive watches
+        intervals = [(dates[j] - dates[j-1]).days for j in range(1, len(dates))]
+        avg_interval_days = sum(intervals) / len(intervals)
 
-    watch_again = sorted(watch_again, key=lambda i: i[0], reverse=True)
+        # Predict next watch date
+        predicted_next_watch = dates[-1] + timedelta(days=avg_interval_days)
 
+        # If predicted next watch is in the past, recommend it
+        if predicted_next_watch < datetime.now():
+            # The further in the past it should have been watched, the higher priority
+            delay = (datetime.now() - predicted_next_watch).total_seconds()
+            watch_again.append((delay, movie))
+
+    # Sort by how overdue the movie is (most overdue first)
+    watch_again.sort(key=lambda x: x[0], reverse=True)
+
+    # Return only movies
     return [movie for (_, movie) in watch_again]
