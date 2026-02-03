@@ -1,14 +1,11 @@
 """Business logic of the home sites."""
 
-from collections import Counter
 from datetime import datetime, timedelta
-from sqlalchemy import func, case
-from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 from flask_login import current_user
 
 from moviedb.extensions import db
-from moviedb.models.movie import Movie
-from moviedb.models.watch_history import WatchHistory
+from moviedb.models import Movie, WatchHistory, MovieCast, MovieGenre, MovieCrew
 
 
 def get_new_recommendations(maximum: int = 30, recent_limit: int = 20):
@@ -27,78 +24,97 @@ def get_new_recommendations(maximum: int = 30, recent_limit: int = 20):
     if not recent_wh:
         return []
 
-    recommendations = recent_wh#find_and_calculate_recommendations(recent_wh)
+    recommendations = find_and_calculate_recommendations(recent_wh)
 
     # return given maximum of movies
     return recommendations.limit(maximum).all()
 
 
-def find_and_calculate_recommendations(recent_movies_query: Movie):
-    """Calculate recommend value of each movie
-    based on given watch history."""
+def find_and_calculate_recommendations(recent_movies_query):
 
-    recent_movies = recent_movies_query.options(
-        joinedload(Movie.genres),
-        joinedload(Movie.cast),
-        joinedload(Movie.crew)
-    ).all()
+    # recent movie ids
+    recent_ids = recent_movies_query.with_entities(Movie.id).statement
 
-    if not recent_movies:
-        return db.session.query(Movie).filter(False)
 
-    # Aggregate features from recent movies
-    genre_counter = Counter()
-    cast_counter = Counter()
-    director_counter = Counter()
-
-    # TODO include release year
-
-    for movie in recent_movies:
-        genre_counter.update([g.genre.name for g in movie.genres])
-        cast_counter.update([c.person.id for c in movie.cast])
-        director_counter.update([c.person.id for c in movie.crew if c.role == "director"])
-
-    # IDs to exclude (already watched)
-    recent_ids = {m.id for m in recent_movies}
-
-    # Base query for candidate movies
-    candidate_query = (
-        db.session.query(Movie)
-        .options(
-            joinedload(Movie.genres),
-            joinedload(Movie.cast),
-            joinedload(Movie.crew)
+    # genre counts
+    recent_genres = (
+        db.session.query(
+            MovieGenre.genre_id.label("genre_id"),
+            func.count().label("cnt")
         )
-        .filter(~Movie.id.in_(recent_ids))
+        .filter(MovieGenre.movie_id.in_(recent_ids))
+        .group_by(MovieGenre.genre_id)
+        .subquery()
     )
 
-    # Compute a simple score for each candidate movie
-    scored_movies = []
-    for movie in candidate_query.all():
-        score = 0
-        # Genre match
-        score += sum(genre_counter[g.genre.name] for g in movie.genres if g.genre.name in genre_counter)
-        # Cast match
-        score += sum(cast_counter[c.person.id] for c in movie.cast if c.person.id in cast_counter)
-        # Director match
-        score += sum(director_counter[c.person.id] for c in movie.crew if c.role == "director" and c.person.id in director_counter)
-        # Boost score with IMDb rating if available
-        if movie.imdb_rating:
-            score += movie.imdb_rating / 2
+    # cast counts
+    recent_cast = (
+        db.session.query(
+            MovieCast.person_id.label("person_id"),
+            func.count().label("cnt")
+        )
+        .filter(MovieCast.movie_id.in_(recent_ids))
+        .group_by(MovieCast.person_id)
+        .subquery()
+    )
 
-        if score > 0:
-            scored_movies.append((score, movie))
+    # director counts
+    recent_directors = (
+        db.session.query(
+            MovieCrew.person_id.label("person_id"),
+            func.count().label("cnt")
+        )
+        .filter(MovieCrew.movie_id.in_(recent_ids))
+        .filter(MovieCrew.role == "director")
+        .group_by(MovieCrew.person_id)
+        .subquery()
+    )
 
-    # Sort by score descending
-    scored_movies.sort(key=lambda x: x[0], reverse=True)
+    # calculate scores
+    genre_score = func.coalesce(func.sum(recent_genres.c.cnt), 0)
+    cast_score = func.coalesce(func.sum(recent_cast.c.cnt), 0)
+    director_score = func.coalesce(func.sum(recent_directors.c.cnt), 0)
+    rating_score = func.coalesce(Movie.imdb_rating, 0)
+    total_score = (
+        genre_score * 3 +
+        cast_score  * 4 +
+        director_score * 6 +
+        rating_score / 2
+    )
 
-    top_ids_ordered = [m.id for _, m in scored_movies]
-    if not top_ids_ordered:
-        return db.session.query(Movie).filter(False)  # empty query
+    # ---- Main query ----
+    recommendations = (
+        db.session.query(
+            Movie,
+            genre_score.label("g"),
+            cast_score.label("c"),
+            director_score.label("d"),
+            rating_score.label("r"),
+            total_score.label("score")
+        )
+        # genres
+        .outerjoin(MovieGenre, Movie.id == MovieGenre.movie_id)
+        .outerjoin(recent_genres, MovieGenre.genre_id == recent_genres.c.genre_id)
+        # cast
+        .outerjoin(MovieCast, Movie.id == MovieCast.movie_id)
+        .outerjoin(recent_cast, MovieCast.person_id == recent_cast.c.person_id)
+        # directors
+        .outerjoin(MovieCrew, Movie.id == MovieCrew.movie_id)
+        .outerjoin(
+            recent_directors,
+            MovieCrew.person_id == recent_directors.c.person_id
+        )
+        .filter(~Movie.id.in_(recent_ids))
+        .group_by(Movie.id)
+        .having(total_score > 0)
+        # at least 2 same genres, 1 director or some cast
+        .having(
+            (genre_score + cast_score + director_score) >= 2
+        )
+        .order_by(total_score.desc())
+    )
 
-    # Use CASE to preserve ordering
-    ordering = case({id_: index for index, id_ in enumerate(top_ids_ordered)}, value=Movie.id)
-    return db.session.query(Movie).filter(Movie.id.in_(top_ids_ordered)).order_by(ordering)
+    return recommendations.with_entities(Movie)
 
 
 def get_watch_again():
