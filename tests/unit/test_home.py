@@ -198,13 +198,13 @@ def test_get_new_recommendations(test_client, new_user):
             db.session.add(WatchHistory(new_user.id, movie_ids[f'Movie {i}'], watch_date))
             watch_date = watch_date + timedelta(days=1)
 
-        recommendations = get_new_recommendations(maximum=3, recent_limit=0)
+        recommendations = get_new_recommendations(maximum=3)
         assert len(recommendations) == 0
 
-        recommendations = get_new_recommendations(maximum=0, recent_limit=2)
+        recommendations = get_new_recommendations(maximum=0)
         assert len(recommendations) == 0
 
-        recommendations = get_new_recommendations(maximum=4, recent_limit=2)
+        recommendations = get_new_recommendations(maximum=4)
         assert len(recommendations) == 4
         assert {movie[0].title for movie in recommendations} == {
             'Movie 6',
