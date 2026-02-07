@@ -1,11 +1,10 @@
 """Module providing routes for /movies sites."""
 
 import re
-import unicodedata
-
-from sqlalchemy import select, case
+from sqlalchemy import select, func, cast, Text, case
 from flask import request, render_template, redirect, url_for
 from flask_login import login_required, current_user
+from unidecode import unidecode
 
 from moviedb.extensions import db
 from moviedb.movies import bp  # pylint: disable=R0401; # noqa
@@ -25,10 +24,10 @@ def browse():
     pagination = db.paginate(query, page=page, per_page=24)
 
     # Lazy refresh TMDb data
-    for movie in pagination.items:
-        if not movie.tmdb_id or not movie.poster_path or not movie.summary:
-            refresh_tmdb_data(movie)
-    db.session.commit()
+    #for movie in pagination.items:
+    #    if not movie.tmdb_id or not movie.poster_path or not movie.summary:
+    #        refresh_tmdb_data(movie)
+    #db.session.commit()
 
     return render_template('movies/browse.html', pagination=pagination)
 
@@ -163,37 +162,51 @@ def remove_from_watch_later(movie_id):
     return redirect(url_for('movies.movie', movie_id=movie_id, name=name))
 
 
-@bp.route('search-movie', methods=['POST'])
+@bp.route('search-movie', methods=['GET', 'POST'])
 def search_movie():
     """Route to the page with search results."""
-    page = request.args.get('page', 1, type=int)
 
-    prompt = request.form.get('search')
-    if prompt is None:
-        return redirect(url_for('movies.not_found'))
-    if prompt == '':
+    # POST request
+    if request.method == 'POST':
+        prompt = request.form.get('search', '').strip()
+        if not prompt:
+            return redirect(url_for('movies.browse'))
+
+        # Normalize and encode for URL
+        prompt_param = unidecode(prompt).lower()
+        return redirect(url_for('movies.search_movie', q=prompt_param))
+
+    # GET request
+    prompt = request.args.get('q', '').strip()
+    if not prompt:
         return redirect(url_for('movies.browse'))
 
-    prompt_words = unicodedata.normalize('NFD', prompt).encode('ASCII', 'ignore').decode("utf-8")
-    # remove non-words character and lowercase letters
-    prompt_words = re.sub('[^a-zA-Z0-9 ]+', ' ', prompt_words).lower()
-    # remove words the, a, and
-    prompt_words = re.sub('(?<![a-zA-Z0-9_])(the|a|and)+(?![a-zA-Z0-9_])', '', prompt_words)
-    # remove leading or trailing whitespaces
-    prompt_words = re.sub('^[\r\n\t\f\v ]+|[\r\n\t\f\v ]+$', '', prompt_words)
-    # squash whitespaces and split into words
-    prompt_words = re.sub('[\r\n\t\f\v ]+', ' ', prompt_words).split(' ')
+    page = request.args.get('page', 1, type=int)
 
-    common_words = (sum(case((Movie.unaccented_title.ilike(f'%{word}%'), 1), else_=0) for word in prompt_words)).label(
-        'common_words'
+    # normalize
+    normalized_prompt = unidecode(prompt.lower())
+    normalized_prompt = re.sub(r'^(the |a |an )', '', normalized_prompt)
+    normalized_title = func.regexp_replace(
+        func.lower(Movie.unaccented_title), r'^(the |a |an )', '', 'i'
     )
-    found_movies = select(Movie).add_columns(common_words).where(common_words > 0).order_by(common_words.desc())
+    # calculate similarities
+    similarity_score = func.similarity(normalized_title, cast(normalized_prompt, Text))
+    exact_match = case((normalized_title.ilike(f"%{normalized_prompt}%"), 5), else_=0)
+    startswith = case((normalized_title.ilike(f"{normalized_prompt}%"), 3), else_=0)
+    total_score = similarity_score + exact_match + startswith
+
+    found_movies = (
+        db.session.query(Movie)
+        .filter(normalized_title.op('%')(cast(normalized_prompt, Text)))  # trigram similarity filter
+        .add_columns(total_score.label('score'))
+        .order_by(total_score.desc())
+    )
     pagination = db.paginate(found_movies, page=page, per_page=24)
 
     # Lazy refresh TMDb data
-    for movie in pagination.items:
-        if not movie.tmdb_id or not movie.poster_path or not movie.summary:
-            refresh_tmdb_data(movie)
-    db.session.commit()
+    #for movie in pagination.items:
+    #    if not movie.tmdb_id or not movie.poster_path or not movie.summary:
+    #        refresh_tmdb_data(movie)
+    #db.session.commit()
 
     return render_template('movies/search.html', prompt=prompt, pagination=pagination)
