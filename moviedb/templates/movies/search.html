@@ -20,7 +20,7 @@
                 </div>
             {% endfor %}
         </div>
-        {{ render_pagination(pagination, "movies.search_movie") }}
+        {{ render_pagination(pagination, "movies.search_movie", q=prompt) }}
     </div>
 {% endif %}
 {% endblock %}

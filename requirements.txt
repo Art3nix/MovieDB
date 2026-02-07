@@ -57,6 +57,7 @@ tomli==2.0.1
 tqdm==4.67.1
 typer-slim==0.21.1
 typing_extensions==4.11.0
+Unidecode==1.4.0
 urllib3==2.6.3
 Werkzeug==3.0.2
 xxhash==3.6.0

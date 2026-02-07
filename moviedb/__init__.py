@@ -3,6 +3,7 @@
 from flask import Flask
 from dotenv import load_dotenv
 from config import Config
+from sqlalchemy import text
 
 from moviedb.extensions import db, bcrypt, login_manager, migrate
 from moviedb.models.movie import Movie
@@ -47,6 +48,12 @@ def create_app(config_class=Config):
         db.create_all()
         if db.session.query(Movie).count() == 0:
             pass #load_dataset(db, 'imdb_top_1000.csv')
+
+    # Create pg_trgm extension at startup
+    with app.app_context():
+        with db.engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+            conn.commit()
 
     @login_manager.user_loader
     def load_user(user_id):
