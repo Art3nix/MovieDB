@@ -25,10 +25,10 @@ def browse():
     pagination = db.paginate(query, page=page, per_page=24)
 
     # Lazy refresh TMDb data
-    for movie in pagination.items:
-        if not movie.tmdb_id or not movie.poster_path or not movie.summary:
-            refresh_tmdb_data(movie)
-    db.session.commit()
+    #for movie in pagination.items:
+    #    if not movie.tmdb_id or not movie.poster_path or not movie.summary:
+    #        refresh_tmdb_data(movie)
+    #db.session.commit()
 
     return render_template('movies/browse.html', pagination=pagination)
 
@@ -191,9 +191,9 @@ def search_movie():
     pagination = db.paginate(found_movies, page=page, per_page=24)
 
     # Lazy refresh TMDb data
-    for movie in pagination.items:
-        if not movie.tmdb_id or not movie.poster_path or not movie.summary:
-            refresh_tmdb_data(movie)
-    db.session.commit()
+    #for movie in pagination.items:
+    #    if not movie.tmdb_id or not movie.poster_path or not movie.summary:
+    #        refresh_tmdb_data(movie)
+    #db.session.commit()
 
     return render_template('movies/search.html', prompt=prompt, pagination=pagination)

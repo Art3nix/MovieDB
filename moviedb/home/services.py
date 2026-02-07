@@ -1,7 +1,8 @@
 """Business logic of the home sites."""
 
 from datetime import datetime, timedelta
-from sqlalchemy import func
+from sqlalchemy import select, func, desc, outerjoin, case
+from sqlalchemy.orm import aliased
 from flask_login import current_user
 
 from moviedb.extensions import db
@@ -13,108 +14,138 @@ def get_new_recommendations(maximum: int = 30, recent_limit: int = 20):
     based on the recent watch history."""
 
     # get n recently watched movies
-    recent_wh = (
-        db.session.query(Movie)
-        .join(WatchHistory, Movie.id == WatchHistory.movie_id)
+    recent_ids_cte = (
+        select(WatchHistory.movie_id)
         .where(WatchHistory.user_id == current_user.id)
         .order_by(WatchHistory.date_watched.desc())
         .limit(recent_limit)
+        .cte(name="recent_ids")
     )
 
-    if not recent_wh:
+    has_recent = db.session.query(recent_ids_cte.c.movie_id).first()
+    if not has_recent:
         return []
 
-    recommendations = find_and_calculate_recommendations(recent_wh)
+    recommendations = find_and_calculate_recommendations(recent_ids_cte, maximum)
 
     # return given maximum of movies
-    return recommendations.limit(maximum).all()
+    return recommendations.all()
 
 
-def find_and_calculate_recommendations(recent_movies_query):
+def find_and_calculate_recommendations(recent_ids_cte, maximum):
 
-    # recent movie ids
-    recent_ids = recent_movies_query.with_entities(Movie.id).statement
-
-
-    # genre counts
+    # genre
     recent_genres = (
-        db.session.query(
-            MovieGenre.genre_id.label("genre_id"),
+        select(
+            MovieGenre.genre_id,
             func.count().label("cnt")
         )
-        .filter(MovieGenre.movie_id.in_(recent_ids))
+        .where(MovieGenre.movie_id.in_(select(recent_ids_cte.c.movie_id)))
         .group_by(MovieGenre.genre_id)
-        .subquery()
+        .cte(name="recent_genres")
     )
 
-    # cast counts
+    # cast
     recent_cast = (
-        db.session.query(
-            MovieCast.person_id.label("person_id"),
+        select(
+            MovieCast.person_id,
             func.count().label("cnt")
         )
-        .filter(MovieCast.movie_id.in_(recent_ids))
+        .where(MovieCast.movie_id.in_(select(recent_ids_cte.c.movie_id)))
         .group_by(MovieCast.person_id)
-        .subquery()
+        .cte(name="recent_cast")
     )
 
-    # director counts
+    # director
     recent_directors = (
-        db.session.query(
-            MovieCrew.person_id.label("person_id"),
+        select(
+            MovieCrew.person_id,
             func.count().label("cnt")
         )
-        .filter(MovieCrew.movie_id.in_(recent_ids))
-        .filter(MovieCrew.role == "director")
+        .where(
+            (MovieCrew.movie_id.in_(select(recent_ids_cte.c.movie_id))) &
+            (MovieCrew.role == "director")
+        )
         .group_by(MovieCrew.person_id)
-        .subquery()
+        .cte(name="recent_directors")
     )
 
     # calculate scores
-    genre_score = func.coalesce(func.sum(recent_genres.c.cnt), 0)
-    cast_score = func.coalesce(func.sum(recent_cast.c.cnt), 0)
-    director_score = func.coalesce(func.sum(recent_directors.c.cnt), 0)
-    rating_score = func.coalesce(Movie.imdb_rating, 0)
-    total_score = (
-        genre_score * 3 +
-        cast_score  * 4 +
-        director_score * 6 +
-        rating_score / 2
+    genre_scores = (
+        select(
+            MovieGenre.movie_id,
+            func.sum(recent_genres.c.cnt).label("score")
+        )
+        .join(recent_genres, MovieGenre.genre_id == recent_genres.c.genre_id)
+        .where(~MovieGenre.movie_id.in_(select(recent_ids_cte.c.movie_id)))
+        .group_by(MovieGenre.movie_id)
+        .cte(name="genre_scores")
     )
 
-    # ---- Main query ----
+    cast_scores = (
+        select(
+            MovieCast.movie_id,
+            func.sum(recent_cast.c.cnt).label("score")
+        )
+        .join(recent_cast, MovieCast.person_id == recent_cast.c.person_id)
+        .where(~MovieCast.movie_id.in_(select(recent_ids_cte.c.movie_id)))
+        .group_by(MovieCast.movie_id)
+        .cte(name="cast_scores")
+    )
+
+    director_scores = (
+        select(
+            MovieCrew.movie_id,
+            func.sum(recent_directors.c.cnt).label("score")
+        )
+        .join(recent_directors, MovieCrew.person_id == recent_directors.c.person_id)
+        .where(
+            (MovieCrew.role == "director") &
+            (~MovieCrew.movie_id.in_(select(recent_ids_cte.c.movie_id)))
+        )
+        .group_by(MovieCrew.movie_id)
+        .cte(name="director_scores")
+    )
+    g = aliased(genre_scores)
+    c = aliased(cast_scores)
+    d = aliased(director_scores)
+    combined_scores = (
+        select(
+            func.coalesce(g.c.movie_id, c.c.movie_id).label("movie_id"),
+            func.coalesce(g.c.score, 0).label("genre_score"),
+            func.coalesce(c.c.score, 0).label("cast_score"),
+            func.coalesce(d.c.score, 0).label("director_score"),
+        )
+        .select_from(
+            outerjoin(
+                outerjoin(g, c, g.c.movie_id == c.c.movie_id),
+                d,
+                func.coalesce(g.c.movie_id, c.c.movie_id) == d.c.movie_id,
+            )
+        )
+        .where(
+            (func.coalesce(g.c.score, 0) +
+            func.coalesce(c.c.score, 0) +
+            func.coalesce(d.c.score, 0)) >= 2
+        )
+        .cte(name="combined_scores")
+    )
+
+    # final query
     recommendations = (
-        db.session.query(
-            Movie,
-            genre_score.label("g"),
-            cast_score.label("c"),
-            director_score.label("d"),
-            rating_score.label("r"),
-            total_score.label("score")
-        )
-        # genres
-        .outerjoin(MovieGenre, Movie.id == MovieGenre.movie_id)
-        .outerjoin(recent_genres, MovieGenre.genre_id == recent_genres.c.genre_id)
-        # cast
-        .outerjoin(MovieCast, Movie.id == MovieCast.movie_id)
-        .outerjoin(recent_cast, MovieCast.person_id == recent_cast.c.person_id)
-        # directors
-        .outerjoin(MovieCrew, Movie.id == MovieCrew.movie_id)
-        .outerjoin(
-            recent_directors,
-            MovieCrew.person_id == recent_directors.c.person_id
-        )
-        .filter(~Movie.id.in_(recent_ids))
-        .group_by(Movie.id)
-        .having(total_score > 0)
-        # at least 2 same genres, 1 director or some cast
-        .having(
-            (genre_score + cast_score + director_score) >= 2
-        )
-        .order_by(total_score.desc())
+        db.session.query(Movie)
+        .join(combined_scores, Movie.id == combined_scores.c.movie_id)
+        .order_by(desc(
+                combined_scores.c.genre_score * 3 +
+                combined_scores.c.cast_score * 4 +
+                combined_scores.c.director_score * 6 +
+                func.coalesce(Movie.imdb_rating, 0) / 2 +
+                case((func.abs(Movie.release_year - func.avg(Movie.release_year).over()) <= 5, 2), else_=0)
+            ))
+        .limit(maximum)
     )
 
-    return recommendations.with_entities(Movie)
+    return recommendations
 
 
 def get_watch_again():

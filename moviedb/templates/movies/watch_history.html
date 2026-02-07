@@ -13,7 +13,7 @@
                         <form action="{{ url_for('movies.remove_from_watch_list', movie_id=movie[1]) }}" method="post" style="position: absolute;">
                             <button type="submit" class="position-absolute btn btn-primary" style="border-radius: 0; left: 0.25rem; font-size: 0.7rem; line-height: 2.5"><i class="fas fa-minus"></i></button>
                         </form>
-                        <img src="{{ movie.poster_path | tmdb_image }}" class="card-img-top" alt="{{ movie[0].title }}">
+                        <img src="{{ movie[0].poster_path | tmdb_image }}" class="card-img-top" alt="{{ movie[0].title }}">
                         <div class="card-body d-flex flex-column justify-content-between">
                             <div class="d-flex flex-column">
                                 <h5 class="card-title">{{ movie[0].title }}</h5>
