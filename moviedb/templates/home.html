@@ -117,101 +117,34 @@
 {{ super() }}
 <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
-        const watchLaterSlider = document.querySelector(".watch-later-slider");
-        const watchLaterLen = watchLaterSlider.scrollWidth - watchLaterSlider.clientWidth;
-        const prevWL = watchLaterSlider.parentNode.querySelector(".prev-button");
-        const nextWL = watchLaterSlider.parentNode.querySelector(".next-button");
+        document.querySelectorAll(".row.position-relative").forEach(section => {
 
-        const recommendSlider = document.querySelector(".recommendations-slider");
-        const recommendLen = recommendSlider.scrollWidth - recommendSlider.clientWidth;
-        const prevR = recommendSlider.parentNode.querySelector(".prev-button");
-        const nextR = recommendSlider.parentNode.querySelector(".next-button");
+            const slider = section.querySelector(".watch-later-slider, .recommendations-slider, .watch-again-slider");
+            const prev = section.querySelector(".prev-button");
+            const next = section.querySelector(".next-button");
 
-        const watchAgainSlider = document.querySelector(".watch-again-slider");
-        const watchAgainLen = watchAgainSlider.scrollWidth - watchAgainSlider.clientWidth;
-        const prevWA = watchAgainSlider.parentNode.querySelector(".prev-button");
-        const nextWA = watchAgainSlider.parentNode.querySelector(".next-button");
+            if (!slider || !prev || !next) return;
 
-        function checkButtons() {
-            var x = watchLaterSlider.scrollLeft;
-            if (x === 0) {
-                prevWL.setAttribute("disabled", "true");
-            } else if (x == watchLaterLen) {
-                nextWL.setAttribute("disabled", "true");
-            } else {
-                prevWL.removeAttribute("disabled");
-                nextWL.removeAttribute("disabled");
+            function checkButtons() {
+                const maxScroll = slider.scrollWidth - slider.clientWidth;
+
+                prev.disabled = slider.scrollLeft <= 0;
+                next.disabled = slider.scrollLeft >= maxScroll;
             }
-            x = recommendSlider.scrollLeft;
-            if (x === 0) {
-                prevR.setAttribute("disabled", "true");
-            } else if (x == recommendLen) {
-                nextR.setAttribute("disabled", "true");
-            } else {
-                prevR.removeAttribute("disabled");
-                nextR.removeAttribute("disabled");
-            }
-            x = watchAgainSlider.scrollLeft;
-            if (x === 0) {
-                prevWA.setAttribute("disabled", "true");
-            } else if (x == watchAgainLen) {
-                nextWA.setAttribute("disabled", "true");
-            } else {
-                prevWA.removeAttribute("disabled");
-                nextWA.removeAttribute("disabled");
-            }
-        }
 
-        watchLaterSlider.addEventListener("scroll", checkButtons);
-        recommendSlider.addEventListener("scroll", checkButtons);
-        watchAgainSlider.addEventListener("scroll", checkButtons);
-        window.addEventListener("resize", checkButtons);
-        checkButtons();
+            prev.addEventListener("click", () => {
+                slider.scrollBy({ left: -300, behavior: "smooth" });
+            });
 
-        function prevItems(event) {
-            if (event.target.parentNode === watchLaterSlider.parentNode) {
-                watchLaterSlider.scrollBy({
-                    left: -300,
-                    behavior:"smooth"
-                });
-            } else if (event.target.parentNode === recommendSlider.parentNode) {
-                recommendSlider.scrollBy({
-                    left: -300,
-                    behavior:"smooth"
-                });
-            } else if (event.target.parentNode === watchLaterSlider.parentNode) {
-                watchLaterSlider.scrollBy({
-                    left: -300,
-                    behavior:"smooth"
-                });
-            }
-        }
+            next.addEventListener("click", () => {
+                slider.scrollBy({ left: 300, behavior: "smooth" });
+            });
 
-        function nextItems(event) {
-            if (event.target.parentNode === watchLaterSlider.parentNode) {
-                watchLaterSlider.scrollBy({
-                    left: 300,
-                    behavior:"smooth"
-                });
-            } else if (event.target.parentNode === recommendSlider.parentNode) {
-                recommendSlider.scrollBy({
-                    left: 300,
-                    behavior:"smooth"
-                });
-            } else if (event.target.parentNode === watchLaterSlider.parentNode) {
-                watchLaterSlider.scrollBy({
-                    left: 300,
-                    behavior:"smooth"
-                });
-            }
-        }
+            slider.addEventListener("scroll", checkButtons);
+            window.addEventListener("resize", checkButtons);
 
-        prevWL.addEventListener("click", prevItems);
-        nextWL.addEventListener("click", nextItems);
-        prevR.addEventListener("click", prevItems);
-        nextR.addEventListener("click", nextItems);
-        prevWA.addEventListener("click", prevItems);
-        nextWA.addEventListener("click", nextItems);
+            checkButtons();
+        });
 
     });
 </script>
