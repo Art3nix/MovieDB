@@ -20,6 +20,6 @@ jobs:
             cd /home/ubuntu/MovieDB
             git fetch origin
             git reset --hard origin/production
-            source .venv/bin/activate
-            pip install -r requirements.txt
-            sudo systemctl restart moviedb
+            # This rebuilds the image (picking up new pip packages if requirements.txt changed) 
+            # and restarts only the containers that need updating
+            docker compose up -d --build
