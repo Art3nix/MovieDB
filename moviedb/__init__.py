@@ -25,6 +25,8 @@ def create_app(config_class=Config):
     app = Flask(__name__, static_url_path='', static_folder='static', template_folder='templates')
     app.config.from_object(config_class)
 
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
+
     # Register CLI
     app.cli.add_command(import_imdb)
     app.cli.add_command(import_tmdb)
